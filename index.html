@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ถึง... พี่ฝน 💌</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Prompt', 'Mitr', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(120% 120% at 50% 10%, #fff0f3 0%, #fde2e8 40%, #e8edfb 100%);
+      padding: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* แสง Ambient พื้นหลัง */
+    .ambient-glow {
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(255, 154, 179, 0.4) 0%, rgba(255, 204, 218, 0.05) 70%);
+      filter: blur(80px);
+      border-radius: 50%;
+      z-index: 0;
+      pointer-events: none;
+      animation: pulseGlow 6s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0% { transform: scale(0.9) translate(-20px, -20px); }
+      100% { transform: scale(1.15) translate(20px, 20px); }
+    }
+
+    /* Container แชทการ์ด */
+    .chat-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 430px;
+      height: 94vh;
+      max-height: 820px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
+      border-radius: 40px;
+      box-shadow: 0 30px 60px -12px rgba(255, 117, 140, 0.22), 
+                  0 12px 24px -6px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .chat-header {
+      padding: 18px 22px;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid rgba(255, 192, 203, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .profile-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar-box {
+      position: relative;
+      width: 50px;
+      height: 50px;
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2.5px solid #ff758c;
+      box-shadow: 0 4px 14px rgba(255, 117, 140, 0.3);
+    }
+
+    .online-indicator {
+      position: absolute;
+      bottom: 1px;
+      right: 1px;
+      width: 13px;
+      height: 13px;
+      background: #2ed573;
+      border: 2.5px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #2ed573;
+      animation: pulseOnline 2s infinite;
+    }
+
+    @keyframes pulseOnline {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.18); }
+    }
+
+    .user-info h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2d3436;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .user-info span {
+      font-size: 0.78rem;
+      color: #8395a7;
+      font-weight: 400;
+    }
+
+    /* Music Button */
+    .music-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 182, 193, 0.4);
+      background: #ffffff;
+      color: #ff4757;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.15rem;
+      box-shadow: 0 4px 14px rgba(255, 71, 87, 0.15);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .music-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .music-btn.playing {
+      animation: spin 3.5s linear infinite;
+      background: linear-gradient(135deg, #ff6b81, #ff4757);
+      color: #ffffff;
+      border: none;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Messages Area */
+    .chat-messages {
+      flex: 1;
+      padding: 20px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    /* Msg Item พร้อมรูปโปรไฟล์ */
+    .msg-item {
+      max-width: 88%;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+      animation: springBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes springBounce {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .msg-item.incoming {
+      align-self: flex-start;
+      flex-direction: row;
+    }
+
+    .msg-item.outgoing {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    /* รูปอวาตาร์จิ๋วข้างแชท */
+    .chat-avatar-mini {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .msg-content-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .outgoing .msg-content-wrapper {
+      align-items: flex-end;
+    }
+
+    /* Bubble Styles */
+    .msg-bubble {
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      word-break: break-word;
+      position: relative;
+    }
+
+    .incoming .msg-bubble {
+      background: #ffffff;
+      color: #2f3542;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04), 
+                  0 1px 3px rgba(255, 143, 163, 0.1);
+      border: 1px solid rgba(255, 220, 227, 0.8);
+    }
+
+    .outgoing .msg-bubble {
+      background: linear-gradient(135deg, #ff6b81 0%, #ff8fa3 100%);
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 6px 18px rgba(255, 107, 129, 0.28);
+    }
+
+    .msg-time {
+      font-size: 0.68rem;
+      color: #a4b0be;
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .outgoing .msg-time {
+      text-align: right;
+    }
+
+    /* Typing Wave Box */
+    .typing-box {
+      display: none;
+      align-self: flex-start;
+      align-items: center;
+      gap: 5px;
+      background: #ffffff;
+      padding: 12px 18px;
+      border-radius: 22px;
+      border-bottom-left-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(255, 220, 227, 0.8);
+      width: fit-content;
+      margin-left: 42px;
+      animation: springBounce 0.3s ease-out forwards;
+    }
+
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      background: #ff758c;
+      border-radius: 50%;
+      animation: typingWave 1.3s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingWave {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-7px); }
+    }
+
+    /* Input Footer */
+    .chat-footer {
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.9);
+      border-top: 1px solid rgba(255, 192, 203, 0.35);
+    }
+
+    .input-form {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fdf6f7;
+      padding: 6px 8px 6px 20px;
+      border-radius: 35px;
+      border: 1.5px solid #ffccd5;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .input-form:focus-within {
+      background: #ffffff;
+      border-color: #ff6b81;
+      box-shadow: 0 4px 20px rgba(255, 107, 129, 0.18);
+    }
+
+    .chat-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 0.96rem;
+      color: #2f3542;
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #ff6b81 0%, #ff8fa3 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(255, 107, 129, 0.35);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .send-btn:active {
+      transform: scale(0.92);
+    }
+
+    .send-btn:disabled {
+      background: #dcdde1;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Floating Heart on Click */
+    .tap-heart {
+      position: absolute;
+      font-size: 20px;
+      pointer-events: none;
+      animation: floatUpHeart 1s ease-out forwards;
+      z-index: 999;
+    }
+
+    @keyframes floatUpHeart {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.6) rotate(0deg); }
+      100% { opacity: 0; transform: translate(-50%, -120px) scale(1.4) rotate(20deg); }
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      width: 4px;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: #ffd3dc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+
+  <audio id="bgMusic" loop preload="auto">
+    <source src="https://cdn.discordapp.com/attachments/1467039291678003301/1544044719426899998/PUN_-_Proof..mp3?ex=6a971334&is=6a95c1b4&hm=3ed1da10c69215e0f0e85cfff0738fd4d2d76bd85d219c7967f752225028a8ed&" type="audio/mpeg">
+  </audio>
+
+  <div class="chat-card">
+    <div class="chat-header">
+      <div class="profile-wrap">
+        <div class="avatar-box">
+          <img class="avatar-img" id="ohmAvatarHeader" src="" alt="Ohm" />
+          <div class="online-indicator"></div>
+        </div>
+        <div class="user-info">
+          <h3>Ohm 🤍</h3>
+          <span>กำลังสนทนาอยู่กับคุณ</span>
+        </div>
+      </div>
+      <button class="music-btn" id="musicToggle" onclick="toggleMusic()" title="เปิด/ปิดเพลง">🎵</button>
+    </div>
+
+    <div class="chat-messages" id="chatList">
+      <div class="typing-box" id="typing">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <div class="chat-footer">
+      <form class="input-form" id="chatForm" onsubmit="handleUserSubmit(event)">
+        <input 
+          type="text" 
+          id="userInput" 
+          class="chat-input" 
+          placeholder="พิมพ์ข้อความคุยกับโอม..." 
+          autocomplete="off" 
+          required 
+        />
+        <button type="submit" id="sendBtn" class="send-btn" title="ส่งข้อความ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ====================================================
+    // ⚙️ แปะลิงก์รูปโอมและฝนที่นี่ (แก้ลิงก์รูปฝนตรงนี้ได้เลย)
+    // ====================================================
+    const OHM_AVATAR_URL = "https://cdn.discordapp.com/attachments/1467039291678003301/1544041577700270233/IMG_2601.jpg?ex=6a971047&is=6a95bec7&hm=81c221a9bc437935b70c991b4b031638f83ba369cf4f187b9013947d9e90c304&";
+    const FON_AVATAR_URL = "https://cdn.discordapp.com/attachments/1467039291678003301/1544041624097521674/image.png?ex=6a971052&is=6a95bed2&hm=36dd8062d1c8d2dd44c01b924c1ebcf7db95e6f29129ee3e120884748e1ac4a3&"; // 👈 วางลิงก์รูปฝนตรงนี้
+
+    const DISCORD_WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1539201967316803615/cJlf0dEH9ZErIcUXIuKQFCZDAnnZh3hf2d2Q_dRADjZRRS8lNKopOCVtS4UXLU98cU1E";
+
+    // กำหนดรูปโอมที่ Header
+    document.getElementById('ohmAvatarHeader').src = OHM_AVATAR_URL;
+
+    const chatList = document.getElementById('chatList');
+    const typing = document.getElementById('typing');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const bgMusic = document.getElementById('bgMusic');
+    const musicToggle = document.getElementById('musicToggle');
+
+    let currentStep = 0;
+    let rejectCount = 0;
+    let isPlaying = false;
+
+    // เวลาปัจจุบัน
+    function getTimeString() {
+      const now = new Date();
+      return now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ระบบเพลง
+    function toggleMusic() {
+      if (isPlaying) {
+        bgMusic.pause();
+        musicToggle.classList.remove('playing');
+        isPlaying = false;
+      } else {
+        bgMusic.play().then(() => {
+          musicToggle.classList.add('playing');
+          isPlaying = true;
+        }).catch(err => console.log(err));
+      }
+    }
+
+    function enableAudioOnFirstTouch() {
+      if (!isPlaying) {
+        bgMusic.play().then(() => {
+          musicToggle.classList.add('playing');
+          isPlaying = true;
+        }).catch(() => {});
+      }
+      window.removeEventListener('click', enableAudioOnFirstTouch);
+      window.removeEventListener('touchstart', enableAudioOnFirstTouch);
+    }
+    window.addEventListener('click', enableAudioOnFirstTouch);
+    window.addEventListener('touchstart', enableAudioOnFirstTouch);
+
+    function scrollToBottom() {
+      setTimeout(() => {
+        chatList.scrollTop = chatList.scrollHeight;
+      }, 60);
+    }
+
+    // ฟังก์ชันเพิ่มข้อความพร้อมอวาตาร์โอมหรือฝน
+    function addMessage(text, type = 'incoming') {
+      const msgItem = document.createElement('div');
+      msgItem.className = `msg-item ${type}`;
+
+      const avatarSrc = (type === 'incoming') ? OHM_AVATAR_URL : FON_AVATAR_URL;
+      const avatarAlt = (type === 'incoming') ? 'Ohm' : 'Fon';
+
+      msgItem.innerHTML = `
+        <img class="chat-avatar-mini" src="${avatarSrc}" alt="${avatarAlt}" />
+        <div class="msg-content-wrapper">
+          <div class="msg-bubble">${text}</div>
+          <div class="msg-time">${getTimeString()}</div>
+        </div>
+      `;
+
+      chatList.insertBefore(msgItem, typing);
+      scrollToBottom();
+    }
+
+    // จำลองการพิมพ์ของโอม
+    function botSpeak(messages, callback) {
+      setInputState(false);
+      typing.style.display = 'flex';
+      scrollToBottom();
+
+      let delay = 0;
+      messages.forEach((msg, idx) => {
+        setTimeout(() => {
+          typing.style.display = 'none';
+          addMessage(msg, 'incoming');
+          
+          if (idx < messages.length - 1) {
+            typing.style.display = 'flex';
+            scrollToBottom();
+          } else {
+            setInputState(true);
+            if (callback) callback();
+          }
+        }, delay + 1000);
+        delay += 1400;
+      });
+    }
+
+    function setInputState(enabled) {
+      userInput.disabled = !enabled;
+      sendBtn.disabled = !enabled;
+      if (enabled) {
+        userInput.focus();
+      }
+    }
+
+    // เริ่มทัก
+    function startGreeting() {
+      botSpeak([
+        "พี่ฝนครับ ว่างคุยกับโอมมั้ย ",
+        "โอมมีเรื่องอยากบอกฝนมากๆ"
+      ], () => {
+        currentStep = 1;
+      });
+    }
+
+    // ตอบกลับข้อความ
+    async function handleUserSubmit(e) {
+      e.preventDefault();
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      addMessage(text, 'outgoing');
+      userInput.value = '';
+      
+      sendToWebhook(text);
+
+      if (currentStep === 1) {
+        currentStep = 2;
+        botSpeak([
+          "เราขอโทษสำหรับทุกอย่างที่ทำให้ฝนหงุดหงิดนะ",
+          "ตอนที่เราไม่ได้คุยกัน เราคิดถึงแกมากๆเลย",
+          "ไม่มีฝนแล้วเหมือนขาดใจ 😔",
+          "กลับมาเป็นเหมือนเดิมกันนะอ้วน 🤍",
+          "เราสัญญาว่าจะตั้งใจรักแก ดูแลแกให้ดีกว่าเดิม",
+          "ยกโทษให้โอม แล้วคืนดีกันนะอ้วน "
+        ]);
+      } 
+      else if (currentStep === 2) {
+        const lower = text.toLowerCase();
+        const acceptKeywords = ["ดีกัน", "คืนดี", "ยกโทษ", "ยอม", "โอเค", "ได้", "อืม", "เออ", "รัก", "บ้า", "หายงอน"];
+        const isAccept = acceptKeywords.some(kw => lower.includes(kw)) && !lower.includes("ไม่");
+
+        if (isAccept) {
+          currentStep = 3;
+          
+          confetti({
+            particleCount: 140,
+            spread: 85,
+            origin: { y: 0.6 },
+            colors: ['#ff6b81', '#ff8fa3', '#ffd2dc', '#a8e6cf']
+          });
+
+          botSpeak([
+            "เย้้ ขอบคุณน้าา",
+            "โอมรักฝนที่สุดในโลกเลยยย ",
+            "เดี๋ยวไปหาถึงบ้านนะอ้วน 🥰💖"
+          ]);
+        } else {
+          rejectCount++;
+          const responses = [
+            "น้าาา ดีกันน้าาา 🥺",
+            "ง้อจริงๆ นะ จะให้ทำอะไรยอมหมดเลย",
+            "คนเก่งอย่าใจแข็งเลย ดีกันเถอะนะอ้วน เรารักแกที่สุดเลยนะ 🤍💖"
+          ];
+          
+          const reply = responses[Math.min(rejectCount - 1, responses.length - 1)];
+          botSpeak([reply]);
+        }
+      } 
+      else if (currentStep === 3) {
+        botSpeak([
+          "รับทราบคับคุณแฟน! รักฝนที่สุดเลยยย 🥰🪐"
+        ]);
+      }
+    }
+
+    // ฟังก์ชันส่งข้อความเข้า Discord Webhook
+    function sendToWebhook(messageText) {
+      if (!DISCORD_WEBHOOK_URL) return;
+
+      fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `💌 **ฝนตอบกลับมาว่า**: "${messageText}"`
+        })
+      }).catch(err => console.error("Error sending webhook:", err));
+    }
+
+    // ลูกเล่นแตะหน้าจอแล้วมีหัวใจลอย
+    document.addEventListener('click', function(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+      
+      const heart = document.createElement('div');
+      heart.className = 'tap-heart';
+      heart.innerText = ['💖', '💕', '🌸', '✨', '💗'][Math.floor(Math.random() * 5)];
+      heart.style.left = e.clientX + 'px';
+      heart.style.top = e.clientY + 'px';
+      document.body.appendChild(heart);
+
+      setTimeout(() => heart.remove(), 1000);
+    });
+
+    window.onload = startGreeting;
+  </script>
+</body>
+</html>
